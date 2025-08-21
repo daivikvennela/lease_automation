@@ -85,6 +85,63 @@
       <textarea id="output" placeholder="Processed output will appear here" readonly></textarea>
     </div>
   </div>
+
+  <hr/>
+  <h2>Generate DOCX from Mapping</h2>
+  <p>Paste JSON to pass into getMapping(json_data). The server will run keyValueMapping(update_json_with_generated_content(json_data)), apply it to the DOCX template, and auto-download the result.</p>
+  <div class="row">
+    <div class="col">
+      <label for="docx-input"><strong>Input JSON for Mapping</strong></label>
+      <textarea id="docx-input" placeholder='{"owner_type":"a married couple", ...}'></textarea>
+      <div class="actions">
+        <input type="text" id="template-path" placeholder="templates/template.docx" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:8px;"/>
+        <input type="text" id="output-name" placeholder="processed_document.docx" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:8px;"/>
+        <label style="display:flex;align-items:center;gap:6px;">
+          <input type="checkbox" id="track-changes"/> Track changes
+        </label>
+        <button id="generate-docx">Generate DOCX</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const docxInput = document.getElementById('docx-input');
+      const generateBtn = document.getElementById('generate-docx');
+      const templatePath = document.getElementById('template-path');
+      const outputName = document.getElementById('output-name');
+      const trackChanges = document.getElementById('track-changes');
+
+      generateBtn.addEventListener('click', async () => {
+        try {
+          const payload = toJSON(docxInput.value.trim());
+          if (templatePath.value.trim()) payload.template_path = templatePath.value.trim();
+          if (outputName.value.trim()) payload.output_filename = outputName.value.trim();
+          payload.track_changes = !!trackChanges.checked;
+
+          generateBtn.disabled = true; generateBtn.textContent = 'Generating...';
+          const res = await fetch('/api/generate-docx', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || 'Failed to generate DOCX');
+          }
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url; a.download = (outputName.value.trim() || 'processed_document.docx'); a.click();
+          URL.revokeObjectURL(url);
+        } catch (e) {
+          alert(e.message || String(e));
+        } finally {
+          generateBtn.disabled = false; generateBtn.textContent = 'Generate DOCX';
+        }
+      });
+    });
+  </script>
 </body>
 </html>
 
