@@ -24,6 +24,8 @@ def process_json():
             "mapping": mapping,
             "enriched_json": enriched
         })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
 @app.route('/api/generate-docx', methods=['POST'])
 def generate_docx():
     try:
@@ -32,7 +34,7 @@ def generate_docx():
             return jsonify({"error": "JSON payload must be an object"}), 400
 
         # Optional override for template path and output filename
-        template_path = payload.get('template_path') or 'templates/template.docx'
+        template_path = payload.get('template_path') or '/Users/daivikvennela/workspace/lease_automation/template/Linea - Lilac Easement Agreement (WA) 4927-7044-5639.4.docx'
         output_name = payload.get('output_filename') or 'processed_document.docx'
         track_changes = bool(payload.get('track_changes', False))
 
@@ -45,8 +47,6 @@ def generate_docx():
             return jsonify({"error": err}), 400
 
         return send_file(io.BytesIO(docx_bytes), as_attachment=True, download_name=output_name, mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
