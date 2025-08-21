@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify, send_from_directory
-from converter import update_json_with_generated_content
+from converter import update_json_with_generated_content, keyValueMapping
 import os
 
 app = Flask(__name__, static_folder='web', static_url_path='')
@@ -16,8 +16,12 @@ def process_json():
         data = request.get_json(force=True, silent=False)
         if not isinstance(data, dict):
             return jsonify({"error": "JSON payload must be an object"}), 400
-        result = update_json_with_generated_content(data)
-        return jsonify(result)
+        enriched = update_json_with_generated_content(data)
+        mapping = keyValueMapping(enriched)
+        return jsonify({
+            "mapping": mapping,
+            "enriched_json": enriched
+        })
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 

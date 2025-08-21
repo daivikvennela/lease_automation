@@ -23,18 +23,21 @@
       "acres": 15.2,
       "legal_description": "17-26-41(SE1/4): THE NORTH 492.68 FT OF THE SOUTH 1645.84 FT OF THE SE1/4; EXCEPT THE WEST 1329.35 FT THEREOF. (PARCEL D ROS AFN 7390810)",
       "isPortion": False
+    "parcelNumber": 1,
     },
     {
       "apn": "16174.9077",
       "acres": 10,
       "legal_description": "17-26-41(SE1/4): THE WEST 887.00 FT OF THE NORTH 492.68 FT OF THE SOUTH 1645.84 FT OF THE SE1/4; EXCEPT COUNTY ROADS. (PARCEL A ROS AFN 7390810)",
       "isPortion": False
+      "parcelNumber": 2,
     },
     {
       "apn": "16174.9078",
       "acres": 10,
       "legal_description": "17-26-41(SE1/4): THE WEST 887.00 FT OF THE SOUTH 1153.16 FT OF THE SE1/4; EXCEPT THE S1/2 OF THE S1/2 OF SAID SE1/4; AND EXCEPT COUNTY ROADS. (PARCEL B ROS AFN 7390810)",
       "isPortion": False
+      "parcelNumber": 3,
     }
   ],
   "number_of_parcels": 3
@@ -359,6 +362,7 @@ def build_exhibit_string_from_json(json_data):
         }
         return error_json
 def build_exhibit_string(parcels):
+
     """
     Build the Exhibit A text string from parcel objects.
     
@@ -419,31 +423,11 @@ def build_exhibit_string(parcels):
 
 
 
-
-
-
-
-
-
 # code to add both to the 
-
-
-
-
-
-
 # the final format is a JSON file with the following structure:
-
-
-
-
-
 # real conversion 
 #step one read the JSON file and assign the value on the left to the key and the value on the right to the value
-
 # return the JSON key value mapping pair
-
-
 json_data = {
   "document_name": "Foster_SK_Lilac Easement Agreement (WA)",
   "grantor_type": "Individual",
@@ -510,10 +494,137 @@ def update_json_with_generated_content(json_data):
     return json_data
 
 
+def keyValueMapping(json_data):
+    """
+    Create a key-value mapping from the JSON data.
+    
+    Args:
+        json_data (dict): The JSON data dictionary to process
+        
+    Returns:
+        list: List of dictionaries with 'key' and 'value' pairs for document replacement
+    """
+    mapping_data = []
+    
+    # Basic field mappings
+    basic_fields = {
+        "document_name": "[Document Name]",
+        "grantor_type": "[Grantor Type]", 
+        "grantor_name_1": "[Grantor Name 1]",
+        "grantor_name_2": "[Grantor Name 2]",
+        "trust_entity_name": "[Trust Entity Name]",
+        "grantor_name": "[Grantor Name]",
+        "owner_type": "[Owner Type]",
+        "number_of_grantor_signatures": "[Number of Grantor Signatures]",
+        "grantor_address_1": "[Grantor Address 1]",
+        "grantor_address_2": "[Grantor Address 2]",
+        "state": "[State]",
+        "county": "[County]",
+        "total_acres": "[Total Acres]",
+        "number_of_parcels": "[Number of Parcels]"
+    }
+    
+    # Add basic field mappings
+    for json_key, placeholder in basic_fields.items():
+        if json_key in json_data:
+            value = json_data[json_key]
+            if value is not None:
+                # Convert to string and check if it's not empty
+                str_value = str(value).strip()
+                if str_value != "" and str_value.lower() != "na":
+                    mapping_data.append({
+                        "key": placeholder,
+                        "value": str_value
+                    })
+    
+    # Add signature blocks (use existing values from JSON if available)
+    if "Signature_Block_With_Notary" in json_data:
+        mapping_data.append({
+            "key": "[Signature Block With Notary]",
+            "value": json_data["Signature_Block_With_Notary"]
+        })
+    else:
+        mapping_data.append({
+            "key": "[Signature Block With Notary]",
+            "value": ""
+        })
+    
+    if "Signature_block" in json_data:
+        mapping_data.append({
+            "key": "[Signature Block]",
+            "value": json_data["Signature_block"]
+        })
+    else:
+        mapping_data.append({
+            "key": "[Signature Block]",
+            "value": ""
+        })
+    
+    # Add APN list
+    if "apn_list" in json_data and json_data["apn_list"]:
+        mapping_data.append({
+            "key": "[APN List]",
+            "value": json_data["apn_list"]
+        })
+    
+    # Add Exhibit A mappings
+    if "exhibit_a" in json_data:
+        exhibit = json_data["exhibit_a"]
+        
+        # Basic exhibit fields
+        exhibit_basic_fields = {
+            "county": "[Exhibit A - County]",
+            "document_name": "[Exhibit A - Document Name]",
+            "exhibit_a_string": "[Exhibit A - Exhibit A String]",
+            "generation_timestamp": "[Exhibit A - Generation Timestamp]",
+            "grantor_name": "[Exhibit A - Grantor Name]",
+            "grantor_type": "[Exhibit A - Grantor Type]",
+            "number_of_parcels": "[Exhibit A - Number of Parcels]",
+            "state": "[Exhibit A - State]",
+            "total_acres": "[Exhibit A - Total Acres]"
+        }
+        
+        for json_key, placeholder in exhibit_basic_fields.items():
+            if json_key in exhibit:
+                value = exhibit[json_key]
+                if value is not None:
+                    mapping_data.append({
+                        "key": placeholder,
+                        "value": value
+                    })
+        
+        # Add parcel-specific mappings from exhibit_a.parcel_objects
+        if "parcel_objects" in exhibit and exhibit["parcel_objects"]:
+            for i, parcel in enumerate(exhibit["parcel_objects"], 1):
+                parcel_prefix = f"[Exhibit A - Parcel {i}"
+                mapping_data.extend([
+                    {"key": f"{parcel_prefix} APN]", "value": parcel.get("apn", "")},
+                    {"key": f"{parcel_prefix} Acres]", "value": parcel.get("acres", 0)},
+                    {"key": f"{parcel_prefix} Is Portion]", "value": parcel.get("isPortion", False)},
+                    {"key": f"{parcel_prefix} Legal Description]", "value": parcel.get("legal_description", "")},
+                    {"key": f"{parcel_prefix} Parcel Number]", "value": parcel.get("parcelNumber", i)},
+                    {"key": f"{parcel_prefix} Template Type]", "value": parcel.get("templateType", "standard")}
+                ])
+    
+    # Add Parcels section mappings (from main parcels array)
+    if "parcels" in json_data and json_data["parcels"]:
+        for i, parcel in enumerate(json_data["parcels"], 1):
+            parcel_prefix = f"[Parcels - Parcel {i}"
+            mapping_data.extend([
+                {"key": f"{parcel_prefix} APN]", "value": parcel.get("apn", "")},
+                {"key": f"{parcel_prefix} Acres]", "value": parcel.get("acres", 0)},
+                {"key": f"{parcel_prefix} Is Portion]", "value": parcel.get("isPortion", False)},
+                {"key": f"{parcel_prefix} Legal Description]", "value": parcel.get("legal_description", "")},
+                {"key": f"{parcel_prefix} Parcel Number]", "value": parcel.get("parcelNumber", i)}
+            ])
+    
+    return mapping_data
+
+
 
 
 def main():
-    return update_json_with_generated_content(json_data)
+    return keyValueMapping(update_json_with_generated_content(json_data))
 
 if __name__ == "__main__":
     main()
