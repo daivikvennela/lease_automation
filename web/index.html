@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lease Automation - JSON Processor</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 40px; color: #222; }
+    h1 { margin-bottom: 8px; }
+    .dropzone { border: 2px dashed #888; border-radius: 10px; padding: 24px; text-align: center; color: #666; margin: 16px 0; }
+    .dropzone.dragover { border-color: #0b5; color: #0b5; background: #0b51; }
+    .row { display: flex; gap: 16px; align-items: stretch; }
+    textarea { width: 100%; min-height: 200px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; padding: 12px; border-radius: 8px; border: 1px solid #ccc; }
+    .col { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+    button { background: #0b5; color: white; border: none; padding: 10px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .actions { display: flex; gap: 8px; align-items: center; }
+    pre { background: #f6f8fa; padding: 12px; border-radius: 8px; overflow: auto; }
+  </style>
+  <script>
+    function $(sel, root=document){ return root.querySelector(sel); }
+    function toJSON(text){ try { return JSON.parse(text); } catch(e){ throw new Error('Invalid JSON: ' + e.message); } }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const inputArea = $('#input');
+      const outputArea = $('#output');
+      const drop = $('#drop');
+      const processBtn = $('#process');
+      const downloadBtn = $('#download');
+
+      drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('dragover'); });
+      drop.addEventListener('dragleave', () => drop.classList.remove('dragover'));
+      drop.addEventListener('drop', async (e) => {
+        e.preventDefault(); drop.classList.remove('dragover');
+        const file = e.dataTransfer.files && e.dataTransfer.files[0];
+        if (!file) return;
+        const text = await file.text();
+        inputArea.value = text;
+      });
+
+      processBtn.addEventListener('click', async () => {
+        try {
+          const payload = toJSON(inputArea.value.trim());
+          processBtn.disabled = true; processBtn.textContent = 'Processing...';
+          const res = await fetch('/api/process', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+          const data = await res.json();
+          outputArea.value = JSON.stringify(data, null, 2);
+        } catch (e) {
+          alert(e.message || String(e));
+        } finally {
+          processBtn.disabled = false; processBtn.textContent = 'Process JSON';
+        }
+      });
+
+      downloadBtn.addEventListener('click', () => {
+        try {
+          const blob = new Blob([outputArea.value], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url; a.download = 'processed.json'; a.click();
+          URL.revokeObjectURL(url);
+        } catch (e) { alert('Nothing to download'); }
+      });
+    });
+  </script>
+</head>
+<body>
+  <h1>Lease Automation</h1>
+  <p>Drop a JSON file below or paste JSON, then click Process to run update_json_with_generated_content(json_data).</p>
+
+  <div id="drop" class="dropzone">Drop JSON file here</div>
+
+  <div class="row">
+    <div class="col">
+      <label for="input"><strong>Input JSON</strong></label>
+      <textarea id="input" placeholder='{"owner_type":"a married couple", ...}'></textarea>
+      <div class="actions">
+        <button id="process">Process JSON</button>
+        <button id="download" type="button">Download Output</button>
+      </div>
+    </div>
+    <div class="col">
+      <label for="output"><strong>Output JSON</strong></label>
+      <textarea id="output" placeholder="Processed output will appear here" readonly></textarea>
+    </div>
+  </div>
+</body>
+</html>
+
+
