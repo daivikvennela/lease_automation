@@ -3,8 +3,6 @@ import json
 from docx import Document 
 from io import BytesIO
 import traceback
-
-
 def load_sig_block_template(filename):
     """
     Load a signature block template from the templates/sigBlocks directory.
@@ -354,7 +352,6 @@ def build_exhibit_string(parcels):
         import traceback
         traceback.print_exc()
         raise
-
 def update_json_with_generated_content(json_data):
     """
     Update the JSON data with generated signature blocks and exhibit A content.
@@ -506,8 +503,6 @@ def keyValueMapping(json_data):
 def getMapping(json_data):
     mapping = keyValueMapping(update_json_with_generated_content(json_data))
     return mapping
-
-
 def replace_placeholders_in_document(doc, mapping, track_changes=False):
     """
     Core function that replaces placeholders in a DOCX document.
@@ -544,8 +539,6 @@ def replace_placeholders_in_document(doc, mapping, track_changes=False):
         import traceback
         traceback.print_exc()
         raise
-
-
 def _replace_placeholders_normal(doc, mapping):
     """
     Normal placeholder replacement without track changes.
@@ -628,12 +621,10 @@ def _replace_placeholders_normal(doc, mapping):
             print(f"[WARNING] Could not process footnotes: {str(e)}")
     
     return doc
-
-
 def _replace_placeholders_with_track_changes(doc, mapping):
     """
-    Placeholder replacement with track changes highlighting.
-    Adds yellow highlighting to all replaced text.
+    Placeholder replacement with track changes.
+    Highlighting is disabled per user preference.
     
     Args:
         doc: Document object to process
@@ -643,7 +634,7 @@ def _replace_placeholders_with_track_changes(doc, mapping):
         Document: Processed document with highlighted replacements
     """
     def process_paragraph(paragraph, mapping):
-        """Process a single paragraph for placeholders with highlighting"""
+        """Process a single paragraph for placeholders (no highlighting)"""
         for run in paragraph.runs:
             for key, value in mapping.items():
                 if not value.strip():
@@ -653,9 +644,8 @@ def _replace_placeholders_with_track_changes(doc, mapping):
                 if key in run.text:
                     # Replace the placeholder with the value
                     run.text = run.text.replace(key, value)
-                    # Highlight the replacement with yellow
-                    run.font.highlight_color = 7  # 7 = yellow highlight
-                    print(f"[DEBUG] Highlighted replacement: {key} -> {value[:30]}{'...' if len(value) > 30 else ''}")
+                    # Highlighting disabled
+                    print(f"[DEBUG] Replaced: {key} -> {value[:30]}{'...' if len(value) > 30 else ''}")
                     break  # Only process one replacement per run to avoid conflicts
     
     def process_table(table, mapping):
@@ -697,8 +687,6 @@ def _replace_placeholders_with_track_changes(doc, mapping):
             print(f"[WARNING] Could not process footnotes with track changes: {str(e)}")
     
     return doc
-
-
 def simple_document_replacement(docx_file, mapping_json, output_filename='processed_document.docx', track_changes=False):
     """
     Simple document replacement function that takes JSON mapping and DOCX template,
